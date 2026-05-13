@@ -1,6 +1,11 @@
 import pyray as pr
 
-# todo: make the floor thing a state so i can organize code better
+def updatePosition(p_x, p_y, v_x, v_y, a_x, a_y, dt):
+    v_x += a_x * dt
+    v_y += a_y * dt
+    p_x += v_x * dt
+    p_y += v_y * dt
+    return p_x, p_y, v_x, v_y
 
 def main():
 
@@ -12,12 +17,24 @@ def main():
     mass = 1 # kg
     coefficient_of_friction = 0.8
     gravity = 400 # pixels per second per second
+    class Ball:
+        def __init__(self, x, y, radius, color):
+            self.x = x
+            self.y = y
+            self.v_x = 0
+            self.v_y = 0
+            self.a_x = 0
+            self.a_y = 0
+            self.radius = radius
+            self.color = color
 
-    ball_radius = 25
+    BALL_RADIUS = 25
     ball_color = pr.Color(255, 255, 255, 255)
 
-    p_x = 400
-    p_y = 300
+    ball = Ball(400, 300, BALL_RADIUS, ball_color)
+
+    p_x = ball.x
+    p_y = ball.y
     v_x = 0
     v_y = 0
     a_x = 0
@@ -29,7 +46,7 @@ def main():
     while not pr.window_should_close():
         dt = pr.get_frame_time()
 
-        on_floor = p_y >= window_height - ball_radius
+        on_floor = p_y >= window_height - BALL_RADIUS
         f_x = 0
         f_y = mass * gravity
 
@@ -39,6 +56,8 @@ def main():
             f_x += 500
         if pr.is_key_down(pr.KEY_W) or pr.is_key_down(pr.KEY_UP):
             f_y -= 500
+        if pr.is_key_down(pr.KEY_S) or pr.is_key_down(pr.KEY_DOWN):
+            f_y += 500
 
         if on_floor and v_x != 0:
             friction_force = coefficient_of_friction * mass * gravity
@@ -47,22 +66,19 @@ def main():
         a_x = f_x / mass
         a_y = f_y / mass
 
-        v_x += a_x * dt
-        v_y += a_y * dt
-        p_x += v_x * dt
-        p_y += v_y * dt
+        p_x, p_y, v_x, v_y = updatePosition(p_x, p_y, v_x, v_y, a_x, a_y, dt)
 
-        if p_y > window_height - ball_radius:
-            p_y = window_height - ball_radius
+        if p_y > window_height - BALL_RADIUS:
+            p_y = window_height - BALL_RADIUS
             v_y = -v_y * floor_coefficient_of_restitution
-        if p_y < ball_radius:
-            p_y = ball_radius
+        if p_y < BALL_RADIUS:
+            p_y = BALL_RADIUS
             v_y = -v_y * walls_coefficient_of_restitution
-        if p_x < ball_radius:
-            p_x = ball_radius
+        if p_x < BALL_RADIUS:
+            p_x = BALL_RADIUS
             v_x = -v_x * walls_coefficient_of_restitution
-        if p_x > window_width - ball_radius:
-            p_x = window_width - ball_radius
+        if p_x > window_width - BALL_RADIUS:
+            p_x = window_width - BALL_RADIUS
             v_x = -v_x * walls_coefficient_of_restitution
 
         if on_floor and v_x != 0:
@@ -77,7 +93,7 @@ def main():
         pr.begin_drawing()
         pr.clear_background(pr.Color(135, 206, 235, 255))
 
-        pr.draw_circle(int(p_x), int(p_y), ball_radius, ball_color)
+        pr.draw_circle(int(p_x), int(p_y), BALL_RADIUS, ball_color)
 
         pr.draw_text(str(f_x), 10, 10, 20, pr.Color(0, 0, 0, 255))
         pr.draw_text(str(f_y), 10, 40, 20, pr.Color(0, 0, 0, 255))
