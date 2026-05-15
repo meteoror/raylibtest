@@ -84,15 +84,24 @@ def main():
                 255                        
             )
         )
-        for _ in range(20)
+        for _ in range(30)
     ]
     
     
     pr.init_window(window_width, window_height, "BLL-pt")
     pr.set_target_fps(45)
 
+    time_scale = 1.0
+
     while not pr.window_should_close():
         dt = pr.get_frame_time()
+
+        if pr.is_key_pressed(pr.KEY_H):
+            time_scale *= 0.5
+        if pr.is_key_pressed(pr.KEY_J):
+            time_scale *= 2.0
+
+        dt *= time_scale
 
         for ball in Balls:
             ball.sliding = ball.y >= window_height - ball.radius
@@ -128,6 +137,8 @@ def main():
 
         for ball in Balls:
             pr.draw_circle(int(ball.x), int(ball.y), ball.radius, ball.color)
+
+        pr.draw_text(f"Time Scale: {time_scale:.2f}x", 10, 10, 20, pr.Color(0, 0, 0, 255))
 
         '''
         for i, ball in enumerate(Balls):
