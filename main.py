@@ -72,8 +72,8 @@ def main():
     '''
     Balls = [
         Ball(
-            random.randint(0, window_width//2),  
-            random.randint(0, window_height//2),  
+            random.randint(0, window_width//2) + window_width//4,  
+            random.randint(0, window_height//2) + window_height//4,  
             0, 0, 0, gravity, 
             random.uniform(0.1, 1.5), 
             20,
@@ -135,7 +135,7 @@ def main():
             pr.draw_text(f"Ball {i} fx: {ball.f_x} Newtons", 10, 10 + y_offset, 20, ball.color)
             pr.draw_text(f"Ball {i} fy: {ball.f_y} Newtons", 10, 30 + y_offset, 20, ball.color)
         '''
-        
+
         pr.end_drawing()
 
     pr.close_window()
