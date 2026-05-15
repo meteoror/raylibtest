@@ -12,39 +12,56 @@ def main():
     gravity = 981 # cm/s^2
 
     field_force = 1000 # N
-    class Ball:
-        def __init__(self, x, y, vx, vy, mass, radius, color):
+    class PhysicsBody:
+        def __init__(self, x, y, vx, vy, mass):
             self.x, self.y = x, y
             self.v_x, self.v_y = vx, vy
             self.mass = mass
+            self.f_x, self.f_y = 0, 0
+
+        def apply_force(self, fx, fy):
+            self.f_x += fx
+            self.f_y += fy
+
+        def integrate(self, dt):
+            a_x = self.f_x / self.mass
+            a_y = self.f_y / self.mass
+            self.x, self.y, self.v_x, self.v_y = lib.updatePosition(
+                self.x, self.y, self.v_x, self.v_y, a_x, a_y, dt
+            )
+            self.f_x, self.f_y = 0, 0  # reset forces each frame
+
+    class Ball(PhysicsBody):
+        def __init__(self, x, y, vx, vy, mass, radius, color):
+            super().__init__(x, y, vx, vy, mass)
             self.radius = radius
             self.color = color
 
-        def update(self, dt, f_x, f_y, window_width, window_height, gravity, floor_cor, walls_cor, friction):
-            self.f_x = f_x
-            self.f_y = f_y + self.mass * gravity
-
-            self.sliding = self.y >= window_height - self.radius
-
-            a_x = self.f_x / self.mass
-            a_y = (self.f_y + self.mass * gravity) / self.mass
-
-            self.x, self.y, self.v_x, self.v_y = lib.updatePosition(self.x, self.y, self.v_x, self.v_y, a_x, a_y, dt)
-            self.x, self.y, self.v_x, self.v_y = lib.checkCollision(self.x, self.y, self.v_x, self.v_y, self.radius, window_width, window_height, floor_cor, walls_cor)
-            self.v_x = lib.applyFriction(self.v_x, friction, self.mass, gravity, dt) if self.sliding else self.v_x
+        def update(self, dt, window_width, window_height, gravity, floor_cor, walls_cor, friction):
+            self.apply_force(0, self.mass * gravity)  # gravity only for balls
+            self.integrate(dt)
+            self.x, self.y, self.v_x, self.v_y = lib.checkCollision(
+                self.x, self.y, self.v_x, self.v_y, self.radius,
+                window_width, window_height, floor_cor, walls_cor
+            )
+            if self.y >= window_height - self.radius:
+                self.v_x = lib.applyFriction(self.v_x, friction, self.mass, gravity, dt)
 
         def draw(self):
             pr.draw_circle(int(self.x), int(self.y), self.radius, self.color)
 
-    class Rectangle:
-        def __init__(self, x, y, width, height, color):
-            self.x, self.y = x, y
+    class Rectangle(PhysicsBody):
+        def __init__(self, x, y, vx, vy, mass, width, height, color):
+            super().__init__(x, y, vx, vy, mass)
             self.width, self.height = width, height
             self.color = color
 
+        def update(self, dt):
+            self.integrate(dt)  # no gravity, no wall collisions
+
         def draw(self):
             pr.draw_rectangle(int(self.x), int(self.y), int(self.width), int(self.height), self.color)
-
+            
     Balls = [
         Ball(
             random.randint(0, window_width//2) + window_width//4,  
@@ -59,10 +76,10 @@ def main():
                 255                        
             )
         )
-        for _ in range(3)
+        for _ in range(1)
     ]
     
-    Rectangles = [Rectangle(100, 400, 200, 20, pr.Color(139, 69, 19, 255))]
+    Rectangles = [Rectangle(100, 400, 0, 0, 0.05, 200, 20, pr.Color(139, 69, 19, 255))]
 
     pr.init_window(window_width, window_height, "BLL-pt")
     pr.set_target_fps(45)
@@ -80,35 +97,37 @@ def main():
         dt *= time_scale
 
         # gather input once, outside the ball loop
-        input_fx, input_fy = 0, 0
-        if pr.is_key_down(pr.KEY_A): input_fx -= field_force
-        if pr.is_key_down(pr.KEY_D): input_fx += field_force
-        if pr.is_key_down(pr.KEY_W): input_fy -= field_force
-        if pr.is_key_down(pr.KEY_S): input_fy += field_force
-
-        for rect in Rectangles:
-            if pr.is_key_down(pr.KEY_UP): rect.y -= 10
-            if pr.is_key_down(pr.KEY_DOWN): rect.y += 10
-            if pr.is_key_down(pr.KEY_LEFT): rect.x -= 10
-            if pr.is_key_down(pr.KEY_RIGHT): rect.x += 10
 
         pr.begin_drawing()
         pr.clear_background(pr.Color(135, 206, 235, 255))
 
         for ball in Balls:
-            ball.update(dt, input_fx, input_fy, window_width, window_height, gravity, floor_coefficient_of_restitution, walls_coefficient_of_restitution, coefficient_of_friction)
+            if pr.is_key_down(pr.KEY_A): ball.apply_force(-field_force, 0)
+            if pr.is_key_down(pr.KEY_D): ball.apply_force( field_force, 0)
+            if pr.is_key_down(pr.KEY_W): ball.apply_force(0, -field_force)
+            if pr.is_key_down(pr.KEY_S): ball.apply_force(0,  field_force)
+            ball.update(dt, window_width, window_height, gravity, floor_coefficient_of_restitution, walls_coefficient_of_restitution, coefficient_of_friction)
             
-            # Check collision with each rectangle
             for rect in Rectangles:
                 result = lib.checkBallRectangleCollision(ball.x, ball.y, ball.radius, rect.x, rect.y, rect.width, rect.height)
-                
                 if result:
                     n_x, n_y, overlap = result
-                    ball.x, ball.y, ball.v_x, ball.v_y = lib.applyNormals(ball.x, ball.y, overlap, ball.v_x, ball.v_y, n_x, n_y, floor_coefficient_of_restitution)
-
+                    ball.x, ball.y, ball.v_x, ball.v_y = lib.applyNormals(ball.x, ball.y, overlap, ball.v_x, ball.v_y, n_x, n_y, floor_coefficient_of_restitution, rect.v_x, rect.v_y)
+            
             ball.draw()
 
         for rect in Rectangles:
+            prev_x, prev_y = rect.x, rect.y
+
+            if pr.is_key_down(pr.KEY_UP):    rect.apply_force(0, -field_force)
+            if pr.is_key_down(pr.KEY_DOWN):  rect.apply_force(0,  field_force)
+            if pr.is_key_down(pr.KEY_LEFT):  rect.apply_force(-field_force, 0)
+            if pr.is_key_down(pr.KEY_RIGHT): rect.apply_force( field_force, 0)
+
+            rect.update(dt)
+            rect.v_x = rect.x - prev_x
+            rect.v_y = rect.y - prev_y
+
             rect.draw()
 
         pr.draw_text(f"Time Scale: {time_scale:.2f}x", 600, 550, 20, pr.Color(0, 0, 0, 255))

@@ -56,12 +56,16 @@ def checkBallRectangleCollision(ball_x, ball_y, ball_radius, rect_x, rect_y, rec
 
     return nx, ny, overlap
 
-def applyNormals(ball_x, ball_y, overlap, v_x, v_y, n_x, n_y, cor):
+def applyNormals(ball_x, ball_y, overlap, v_x, v_y, n_x, n_y, cor, rect_vx=0, rect_vy=0):
     ball_x += n_x * overlap
     ball_y += n_y * overlap
-    dot = v_x * n_x + v_y * n_y
+    rel_vx = v_x - rect_vx
+    rel_vy = v_y - rect_vy
+    dot = rel_vx * n_x + rel_vy * n_y
     v_x -= 2 * dot * n_x
     v_y -= 2 * dot * n_y
     v_x *= cor
     v_y *= cor
+    v_x += rect_vx
+    v_y += rect_vy
     return ball_x, ball_y, v_x, v_y
