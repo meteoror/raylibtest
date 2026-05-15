@@ -37,6 +37,38 @@ def checkCollision(p_x, p_y, v_x, v_y, radius, w_width, w_height, floor_cor, wal
         
     return p_x, p_y, v_x, v_y
 
+def checkBallRectangleCollision(ball_x, ball_y, ball_radius, rect_x, rect_y, rect_width, rect_height):
+    # find the closest point on the rectangle to the ball center
+    closest_x = max(rect_x, min(ball_x, rect_x + rect_width))
+    closest_y = max(rect_y, min(ball_y, rect_y + rect_height))
+
+    # distance from ball center to that closest point
+    dx = ball_x - closest_x
+    dy = ball_y - closest_y
+    dist = (dx**2 + dy**2) ** 0.5
+
+    if dist >= ball_radius or dist == 0:
+        return None  # duh
+
+    # normal points from rectangle surface toward ball center
+    nx = dx / dist
+    ny = dy / dist
+
+    # how far to push the ball out so it no longer overlaps
+    overlap = ball_radius - dist
+
+    return nx, ny, overlap
+
+def applyNormals(ball_x, ball_y, overlap, v_x, v_y, n_x, n_y, cor):
+    ball_x += n_x * overlap
+    ball_y += n_y * overlap
+    dot = v_x * n_x + v_y * n_y
+    v_x -= 2 * dot * n_x
+    v_y -= 2 * dot * n_y
+    v_x *= cor
+    v_y *= cor
+    return ball_x, ball_y, v_x, v_y
+
 def main():
 
     window_width = 800 # cm
@@ -72,13 +104,15 @@ def main():
         def draw(self):
             pr.draw_circle(int(self.x), int(self.y), self.radius, self.color)
 
-    '''
-    Balls = [
-        Ball(100, 300, 0, 0, 0, gravity, 0.5, 10, pr.Color(255, 0, 0, 255)),
-        Ball(300, 300, 0, 0, 0, gravity, 1, 20, pr.Color(0, 255, 0, 255)),
-        Ball(500, 300, 0, 0, 0, gravity, 2, 40, pr.Color(0, 0, 255, 255))
-    ]
-    '''
+    class Rectangle:
+        def __init__(self, x, y, width, height, color):
+            self.x, self.y = x, y
+            self.width, self.height = width, height
+            self.color = color
+
+        def draw(self):
+            pr.draw_rectangle(int(self.x), int(self.y), int(self.width), int(self.height), self.color)
+
     Balls = [
         Ball(
             random.randint(0, window_width//2) + window_width//4,  
@@ -96,7 +130,8 @@ def main():
         for _ in range(3)
     ]
     
-    
+    Rectangles = [Rectangle(100, 400, 200, 20, pr.Color(139, 69, 19, 255))]
+
     pr.init_window(window_width, window_height, "BLL-pt")
     pr.set_target_fps(45)
 
@@ -124,10 +159,23 @@ def main():
 
         for ball in Balls:
             ball.update(dt, input_fx, input_fy, window_width, window_height, gravity, floor_coefficient_of_restitution, walls_coefficient_of_restitution, coefficient_of_friction)
+            
+            # Check collision with each rectangle
+            for rect in Rectangles:
+                result = checkBallRectangleCollision(ball.x, ball.y, ball.radius, rect.x, rect.y, rect.width, rect.height)
+                
+                if result:
+                    n_x, n_y, overlap = result
+                    ball.x, ball.y, ball.v_x, ball.v_y = applyNormals(ball.x, ball.y, overlap, ball.v_x, ball.v_y, n_x, n_y, floor_coefficient_of_restitution)
+
             ball.draw()
+
+        for rect in Rectangles:
+            rect.draw()
 
         pr.draw_text(f"Time Scale: {time_scale:.2f}x", 600, 550, 20, pr.Color(0, 0, 0, 255))
 
+        '''
         for i, ball in enumerate(Balls):
             y_offset = i * 50  # enough space for 2 lines per ball
             pr.draw_text(f"Ball {i} fx: {int(ball.f_x)} Newtons", 10, 10 + y_offset, 20, ball.color)
@@ -138,6 +186,7 @@ def main():
 
             pr.draw_text(f"Ball {i} vx: {int(ball.v_x)} cm/s", 550, 10 + y_offset, 20, ball.color)
             pr.draw_text(f"Ball {i} vy: {int(ball.v_y)} cm/s", 550, 30 + y_offset, 20, ball.color)
+        '''
 
         pr.end_drawing()
 
