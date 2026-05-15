@@ -7,6 +7,18 @@ def updatePosition(p_x, p_y, v_x, v_y, a_x, a_y, dt):
     p_y += v_y * dt
     return p_x, p_y, v_x, v_y
 
+def applyFriction(v_x, coefficient_of_friction, mass, gravity, dt):
+    friction_force = coefficient_of_friction * mass * gravity
+    friction_acceleration = friction_force / mass
+    friction_deceleration = friction_acceleration * dt
+
+    if abs(v_x) <= friction_deceleration:
+        return 0
+    elif v_x > 0:
+        return v_x - friction_deceleration
+    else:
+        return v_x + friction_deceleration
+
 def checkCollision(p_x, p_y, v_x, v_y, radius, w_width, w_height, floor_cor, walls_cor):
     if p_y > w_height - radius:
         p_y = w_height - radius
@@ -35,35 +47,38 @@ def main():
     coefficient_of_friction = 0.8
     gravity = 400 # pixels per second per second
     class Ball:
-        def __init__(self, x, y, radius, color):
+        def __init__(self, x, y, v_x, v_y, a_x, a_y, radius, color):
             self.x = x
             self.y = y
-            self.v_x = 0
-            self.v_y = 0
-            self.a_x = 0
-            self.a_y = 0
+            self.v_x = v_x
+            self.v_y = v_y
+            self.a_x = a_x
+            self.a_y = a_y
             self.radius = radius
             self.color = color
 
     BALL_RADIUS = 25
     ball_color = pr.Color(255, 255, 255, 255)
 
-    ball = Ball(400, 300, BALL_RADIUS, ball_color)
+    ball = Ball(400, 300, 0, 0, 0, gravity, BALL_RADIUS, ball_color)
 
+    '''
     p_x = ball.x
     p_y = ball.y
-    v_x = 0
-    v_y = 0
-    a_x = 0
-    a_y = gravity  # pixels per second per second
-
+    v_x = ball.v_x
+    v_y = ball.v_y
+    a_x = ball.a_x
+    a_y = ball.a_y
+    '''
+    
     pr.init_window(window_width, window_height, "raylib-py simple test")
     pr.set_target_fps(60)
 
     while not pr.window_should_close():
         dt = pr.get_frame_time()
 
-        on_floor = p_y >= window_height - BALL_RADIUS
+        on_floor = ball.y >= window_height - BALL_RADIUS
+
         f_x = 0
         f_y = mass * gravity
 
@@ -76,29 +91,17 @@ def main():
         if pr.is_key_down(pr.KEY_S) or pr.is_key_down(pr.KEY_DOWN):
             f_y += 500
 
-        if on_floor and v_x != 0:
-            friction_force = coefficient_of_friction * mass * gravity
-            f_x += -friction_force if v_x > 0 else friction_force
+        ball.a_x = f_x / mass
+        ball.a_y = f_y / mass
 
-        a_x = f_x / mass
-        a_y = f_y / mass
-
-        p_x, p_y, v_x, v_y = updatePosition(p_x, p_y, v_x, v_y, a_x, a_y, dt)
-        p_x, p_y, v_x, v_y = checkCollision(p_x, p_y, v_x, v_y, BALL_RADIUS, window_width, window_height, floor_coefficient_of_restitution, walls_coefficient_of_restitution)
-
-        if on_floor and v_x != 0:
-            friction_decel = coefficient_of_friction * gravity * dt
-            if abs(v_x) <= friction_decel:
-                v_x = 0
-            elif v_x > 0:
-                v_x -= friction_decel
-            else:
-                v_x += friction_decel
+        ball.x, ball.y, ball.v_x, ball.v_y = updatePosition(ball.x, ball.y, ball.v_x, ball.v_y, ball.a_x, ball.a_y, dt)
+        ball.x, ball.y, ball.v_x, ball.v_y = checkCollision(ball.x, ball.y, ball.v_x, ball.v_y, BALL_RADIUS, window_width, window_height, floor_coefficient_of_restitution, walls_coefficient_of_restitution)
+        ball.v_x = applyFriction(ball.v_x, coefficient_of_friction, mass, gravity, dt) if on_floor else ball.v_x
 
         pr.begin_drawing()
         pr.clear_background(pr.Color(135, 206, 235, 255))
 
-        pr.draw_circle(int(p_x), int(p_y), BALL_RADIUS, ball_color)
+        pr.draw_circle(int(ball.x), int(ball.y), BALL_RADIUS, ball_color)
 
         pr.draw_text(str(f_x), 10, 10, 20, pr.Color(0, 0, 0, 255))
         pr.draw_text(str(f_y), 10, 40, 20, pr.Color(0, 0, 0, 255))
