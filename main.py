@@ -1,3 +1,4 @@
+import random
 import pyray as pr
 
 def updatePosition(p_x, p_y, v_x, v_y, a_x, a_y, dt):
@@ -38,13 +39,15 @@ def checkCollision(p_x, p_y, v_x, v_y, radius, w_width, w_height, floor_cor, wal
 
 def main():
 
-    window_width = 800
-    window_height = 600
+    window_width = 800 # cm
+    window_height = 600 # cm
 
     walls_coefficient_of_restitution = 0.95
     floor_coefficient_of_restitution = 0.8
     coefficient_of_friction = 0.8
-    gravity = 400 # pixels per second per second
+    gravity = 981 # cm/s^2
+
+    field_force = 1000 # N
     class Ball:
         def __init__(self, x, y, v_x, v_y, a_x, a_y, mass, radius, color):
             self.x = x
@@ -60,15 +63,33 @@ def main():
             self.radius = radius
             self.color = color
 
+    '''
     Balls = [
         Ball(100, 300, 0, 0, 0, gravity, 0.5, 10, pr.Color(255, 0, 0, 255)),
         Ball(300, 300, 0, 0, 0, gravity, 1, 20, pr.Color(0, 255, 0, 255)),
         Ball(500, 300, 0, 0, 0, gravity, 2, 40, pr.Color(0, 0, 255, 255))
     ]
+    '''
+    Balls = [
+        Ball(
+            random.randint(0, window_width//2),  
+            random.randint(0, window_height//2),  
+            0, 0, 0, gravity, 
+            random.uniform(0.1, 1.5), 
+            20,
+            pr.Color(
+                random.randint(0, 255),    
+                random.randint(0, 255),    
+                random.randint(0, 255),    
+                255                        
+            )
+        )
+        for _ in range(20)
+    ]
     
     
     pr.init_window(window_width, window_height, "BLL-pt")
-    pr.set_target_fps(120)
+    pr.set_target_fps(45)
 
     while not pr.window_should_close():
         dt = pr.get_frame_time()
@@ -82,16 +103,16 @@ def main():
 
         if pr.is_key_down(pr.KEY_A) or pr.is_key_down(pr.KEY_LEFT):
             for ball in Balls:
-                ball.f_x -= 500
+                ball.f_x -= field_force
         if pr.is_key_down(pr.KEY_D) or pr.is_key_down(pr.KEY_RIGHT):
             for ball in Balls:
-                ball.f_x += 500
+                ball.f_x += field_force
         if pr.is_key_down(pr.KEY_W) or pr.is_key_down(pr.KEY_UP):
             for ball in Balls:
-                ball.f_y -= 500
+                ball.f_y -= field_force
         if pr.is_key_down(pr.KEY_S) or pr.is_key_down(pr.KEY_DOWN):
             for ball in Balls:
-                ball.f_y += 500
+                ball.f_y += field_force
 
         for ball in Balls:
             ball.a_x = ball.f_x / ball.mass
@@ -108,11 +129,13 @@ def main():
         for ball in Balls:
             pr.draw_circle(int(ball.x), int(ball.y), ball.radius, ball.color)
 
+        '''
         for i, ball in enumerate(Balls):
             y_offset = i * 50  # enough space for 2 lines per ball
-            pr.draw_text(f"Ball {i} fx: {ball.f_x}", 10, 10 + y_offset, 20, ball.color)
-            pr.draw_text(f"Ball {i} fy: {ball.f_y}", 10, 30 + y_offset, 20, ball.color)
-
+            pr.draw_text(f"Ball {i} fx: {ball.f_x} Newtons", 10, 10 + y_offset, 20, ball.color)
+            pr.draw_text(f"Ball {i} fy: {ball.f_y} Newtons", 10, 30 + y_offset, 20, ball.color)
+        '''
+        
         pr.end_drawing()
 
     pr.close_window()
