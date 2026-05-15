@@ -49,19 +49,28 @@ def main():
 
     field_force = 1000 # N
     class Ball:
-        def __init__(self, x, y, v_x, v_y, a_x, a_y, mass, radius, color):
-            self.x = x
-            self.y = y
-            self.v_x = v_x
-            self.v_y = v_y
-            self.a_x = a_x
-            self.a_y = a_y
-            self.f_x = 0
-            self.f_y = 0
-            self.sliding = False
+        def __init__(self, x, y, vx, vy, mass, radius, color):
+            self.x, self.y = x, y
+            self.v_x, self.v_y = vx, vy
             self.mass = mass
             self.radius = radius
             self.color = color
+
+        def update(self, dt, f_x, f_y, window_width, window_height, gravity, floor_cor, walls_cor, friction):
+            self.f_x = f_x
+            self.f_y = f_y + self.mass * gravity
+
+            self.sliding = self.y >= window_height - self.radius
+
+            a_x = self.f_x / self.mass
+            a_y = (self.f_y + self.mass * gravity) / self.mass
+
+            self.x, self.y, self.v_x, self.v_y = updatePosition(self.x, self.y, self.v_x, self.v_y, a_x, a_y, dt)
+            self.x, self.y, self.v_x, self.v_y = checkCollision(self.x, self.y, self.v_x, self.v_y, self.radius, window_width, window_height, floor_cor, walls_cor)
+            self.v_x = applyFriction(self.v_x, friction, self.mass, gravity, dt) if self.sliding else self.v_x
+
+        def draw(self):
+            pr.draw_circle(int(self.x), int(self.y), self.radius, self.color)
 
     '''
     Balls = [
@@ -74,8 +83,8 @@ def main():
         Ball(
             random.randint(0, window_width//2) + window_width//4,  
             random.randint(0, window_height//2) + window_height//4,  
-            0, 0, 0, gravity, 
-            random.uniform(0.1, 1.5), 
+            0, 0,
+            random.uniform(0.1, 0.5), 
             20,
             pr.Color(
                 random.randint(0, 255),    
@@ -103,40 +112,19 @@ def main():
 
         dt *= time_scale
 
-        for ball in Balls:
-            ball.sliding = ball.y >= window_height - ball.radius
-
-        for ball in Balls:
-            ball.f_x = 0
-            ball.f_y = ball.mass * gravity
-
-        if pr.is_key_down(pr.KEY_A) or pr.is_key_down(pr.KEY_LEFT):
-            for ball in Balls:
-                ball.f_x -= field_force
-        if pr.is_key_down(pr.KEY_D) or pr.is_key_down(pr.KEY_RIGHT):
-            for ball in Balls:
-                ball.f_x += field_force
-        if pr.is_key_down(pr.KEY_W) or pr.is_key_down(pr.KEY_UP):
-            for ball in Balls:
-                ball.f_y -= field_force
-        if pr.is_key_down(pr.KEY_S) or pr.is_key_down(pr.KEY_DOWN):
-            for ball in Balls:
-                ball.f_y += field_force
-
-        for ball in Balls:
-            ball.a_x = ball.f_x / ball.mass
-            ball.a_y = ball.f_y / ball.mass
-
-        for ball in Balls:
-            ball.x, ball.y, ball.v_x, ball.v_y = updatePosition(ball.x, ball.y, ball.v_x, ball.v_y, ball.a_x, ball.a_y, dt)
-            ball.x, ball.y, ball.v_x, ball.v_y = checkCollision(ball.x, ball.y, ball.v_x, ball.v_y, ball.radius, window_width, window_height, floor_coefficient_of_restitution, walls_coefficient_of_restitution)
-            ball.v_x = applyFriction(ball.v_x, coefficient_of_friction, ball.mass, gravity, dt) if ball.sliding else ball.v_x
+        # gather input once, outside the ball loop
+        input_fx, input_fy = 0, 0
+        if pr.is_key_down(pr.KEY_A): input_fx -= field_force
+        if pr.is_key_down(pr.KEY_D): input_fx += field_force
+        if pr.is_key_down(pr.KEY_W): input_fy -= field_force
+        if pr.is_key_down(pr.KEY_S): input_fy += field_force
 
         pr.begin_drawing()
         pr.clear_background(pr.Color(135, 206, 235, 255))
 
         for ball in Balls:
-            pr.draw_circle(int(ball.x), int(ball.y), ball.radius, ball.color)
+            ball.update(dt, input_fx, input_fy, window_width, window_height, gravity, floor_coefficient_of_restitution, walls_coefficient_of_restitution, coefficient_of_friction)
+            ball.draw()
 
         pr.draw_text(f"Time Scale: {time_scale:.2f}x", 10, 10, 20, pr.Color(0, 0, 0, 255))
 
