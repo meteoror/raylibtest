@@ -7,6 +7,23 @@ def updatePosition(p_x, p_y, v_x, v_y, a_x, a_y, dt):
     p_y += v_y * dt
     return p_x, p_y, v_x, v_y
 
+def checkCollision(p_x, p_y, v_x, v_y, radius, w_width, w_height, floor_cor, walls_cor):
+    if p_y > w_height - radius:
+        p_y = w_height - radius
+        v_y = -v_y * floor_cor
+    if p_y < radius:
+        p_y = radius
+        v_y = -v_y * walls_cor
+
+    if p_x < radius:
+        p_x = radius
+        v_x = -v_x * walls_cor
+    if p_x > w_width - radius:
+        p_x = w_width - radius
+        v_x = -v_x * walls_cor
+        
+    return p_x, p_y, v_x, v_y
+
 def main():
 
     window_width = 800
@@ -67,19 +84,7 @@ def main():
         a_y = f_y / mass
 
         p_x, p_y, v_x, v_y = updatePosition(p_x, p_y, v_x, v_y, a_x, a_y, dt)
-
-        if p_y > window_height - BALL_RADIUS:
-            p_y = window_height - BALL_RADIUS
-            v_y = -v_y * floor_coefficient_of_restitution
-        if p_y < BALL_RADIUS:
-            p_y = BALL_RADIUS
-            v_y = -v_y * walls_coefficient_of_restitution
-        if p_x < BALL_RADIUS:
-            p_x = BALL_RADIUS
-            v_x = -v_x * walls_coefficient_of_restitution
-        if p_x > window_width - BALL_RADIUS:
-            p_x = window_width - BALL_RADIUS
-            v_x = -v_x * walls_coefficient_of_restitution
+        p_x, p_y, v_x, v_y = checkCollision(p_x, p_y, v_x, v_y, BALL_RADIUS, window_width, window_height, floor_coefficient_of_restitution, walls_coefficient_of_restitution)
 
         if on_floor and v_x != 0:
             friction_decel = coefficient_of_friction * gravity * dt
