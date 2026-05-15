@@ -93,7 +93,7 @@ def main():
                 255                        
             )
         )
-        for _ in range(30)
+        for _ in range(3)
     ]
     
     
@@ -126,14 +126,18 @@ def main():
             ball.update(dt, input_fx, input_fy, window_width, window_height, gravity, floor_coefficient_of_restitution, walls_coefficient_of_restitution, coefficient_of_friction)
             ball.draw()
 
-        pr.draw_text(f"Time Scale: {time_scale:.2f}x", 10, 10, 20, pr.Color(0, 0, 0, 255))
+        pr.draw_text(f"Time Scale: {time_scale:.2f}x", 600, 550, 20, pr.Color(0, 0, 0, 255))
 
-        '''
         for i, ball in enumerate(Balls):
             y_offset = i * 50  # enough space for 2 lines per ball
-            pr.draw_text(f"Ball {i} fx: {ball.f_x} Newtons", 10, 10 + y_offset, 20, ball.color)
-            pr.draw_text(f"Ball {i} fy: {ball.f_y} Newtons", 10, 30 + y_offset, 20, ball.color)
-        '''
+            pr.draw_text(f"Ball {i} fx: {int(ball.f_x)} Newtons", 10, 10 + y_offset, 20, ball.color)
+            pr.draw_text(f"Ball {i} fy: {int(ball.f_y)} Newtons", 10, 30 + y_offset, 20, ball.color)
+
+            pr.draw_text(f"Ball {i} ax: {int(ball.f_x / ball.mass)} cm/s^2", 300, 10 + y_offset, 20, ball.color)
+            pr.draw_text(f"Ball {i} ay: {int(ball.f_y / ball.mass)} cm/s^2", 300, 30 + y_offset, 20, ball.color)
+
+            pr.draw_text(f"Ball {i} vx: {int(ball.v_x)} cm/s", 550, 10 + y_offset, 20, ball.color)
+            pr.draw_text(f"Ball {i} vy: {int(ball.v_y)} cm/s", 550, 30 + y_offset, 20, ball.color)
 
         pr.end_drawing()
 
