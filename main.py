@@ -60,42 +60,58 @@ def main():
             self.radius = radius
             self.color = color
 
-    ball = Ball(400, 300, 0, 0, 0, gravity, 1, 25, pr.Color(255, 255, 255, 255)) # ADD MASS
+    Balls = [
+        Ball(100, 300, 0, 0, 0, gravity, 0.5, 10, pr.Color(255, 0, 0, 255)),
+        Ball(300, 300, 0, 0, 0, gravity, 1, 20, pr.Color(0, 255, 0, 255)),
+        Ball(500, 300, 0, 0, 0, gravity, 2, 40, pr.Color(0, 0, 255, 255))
+    ]
     
-    pr.init_window(window_width, window_height, "raylib-py simple test")
-    pr.set_target_fps(60)
+    
+    pr.init_window(window_width, window_height, "BLL-pt")
+    pr.set_target_fps(120)
 
     while not pr.window_should_close():
         dt = pr.get_frame_time()
 
-        ball.sliding = ball.y >= window_height - ball.radius
+        for ball in Balls:
+            ball.sliding = ball.y >= window_height - ball.radius
 
-        ball.f_x = 0
-        ball.f_y = ball.mass * gravity
+        for ball in Balls:
+            ball.f_x = 0
+            ball.f_y = ball.mass * gravity
 
         if pr.is_key_down(pr.KEY_A) or pr.is_key_down(pr.KEY_LEFT):
-            ball.f_x -= 500
+            for ball in Balls:
+                ball.f_x -= 500
         if pr.is_key_down(pr.KEY_D) or pr.is_key_down(pr.KEY_RIGHT):
-            ball.f_x += 500
+            for ball in Balls:
+                ball.f_x += 500
         if pr.is_key_down(pr.KEY_W) or pr.is_key_down(pr.KEY_UP):
-            ball.f_y -= 500
+            for ball in Balls:
+                ball.f_y -= 500
         if pr.is_key_down(pr.KEY_S) or pr.is_key_down(pr.KEY_DOWN):
-            ball.f_y += 500
+            for ball in Balls:
+                ball.f_y += 500
 
-        ball.a_x = ball.f_x / ball.mass
-        ball.a_y = ball.f_y / ball.mass
+        for ball in Balls:
+            ball.a_x = ball.f_x / ball.mass
+            ball.a_y = ball.f_y / ball.mass
 
-        ball.x, ball.y, ball.v_x, ball.v_y = updatePosition(ball.x, ball.y, ball.v_x, ball.v_y, ball.a_x, ball.a_y, dt)
-        ball.x, ball.y, ball.v_x, ball.v_y = checkCollision(ball.x, ball.y, ball.v_x, ball.v_y, ball.radius, window_width, window_height, floor_coefficient_of_restitution, walls_coefficient_of_restitution)
-        ball.v_x = applyFriction(ball.v_x, coefficient_of_friction, ball.mass, gravity, dt) if ball.sliding else ball.v_x
+        for ball in Balls:
+            ball.x, ball.y, ball.v_x, ball.v_y = updatePosition(ball.x, ball.y, ball.v_x, ball.v_y, ball.a_x, ball.a_y, dt)
+            ball.x, ball.y, ball.v_x, ball.v_y = checkCollision(ball.x, ball.y, ball.v_x, ball.v_y, ball.radius, window_width, window_height, floor_coefficient_of_restitution, walls_coefficient_of_restitution)
+            ball.v_x = applyFriction(ball.v_x, coefficient_of_friction, ball.mass, gravity, dt) if ball.sliding else ball.v_x
 
         pr.begin_drawing()
         pr.clear_background(pr.Color(135, 206, 235, 255))
 
-        pr.draw_circle(int(ball.x), int(ball.y), ball.radius, ball.color)
+        for ball in Balls:
+            pr.draw_circle(int(ball.x), int(ball.y), ball.radius, ball.color)
 
-        pr.draw_text(str(ball.f_x), 10, 10, 20, pr.Color(0, 0, 0, 255))
-        pr.draw_text(str(ball.f_y), 10, 40, 20, pr.Color(0, 0, 0, 255))
+        for i, ball in enumerate(Balls):
+            y_offset = i * 50  # enough space for 2 lines per ball
+            pr.draw_text(f"Ball {i} fx: {ball.f_x}", 10, 10 + y_offset, 20, ball.color)
+            pr.draw_text(f"Ball {i} fy: {ball.f_y}", 10, 30 + y_offset, 20, ball.color)
 
         pr.end_drawing()
 
